@@ -6,8 +6,12 @@ Homebrew tap for [1985epma](https://github.com/1985epma) projects.
 
 ```bash
 brew tap 1985epma/tap
+brew trust 1985epma/tap
 brew install epma-windows-usb-creator
 ```
+
+`brew trust` is required by Homebrew for any third-party tap. It is a one-time
+confirmation that you accept formulae from this tap.
 
 ## Formulae
 
