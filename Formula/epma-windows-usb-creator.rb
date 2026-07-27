@@ -88,8 +88,13 @@ class EpmaWindowsUsbCreator < Formula
   test do
     # A GUI application cannot be launched in a test environment, so verify the
     # installed script is syntactically valid and that its wrapper is executable.
-    system formula_opt_bin("python@3.13")/"python3.13",
-           "-m", "py_compile", libexec/"win11_usb_creator.py"
+    #
+    # `compile()` is used instead of `py_compile` because the latter writes a
+    # __pycache__ directory next to the source, and the Cellar is read-only here.
+    system formula_opt_bin("python@3.13")/"python3.13", "-c",
+           "import sys, pathlib; p = pathlib.Path(sys.argv[1]); " \
+           "compile(p.read_text(encoding='utf-8'), str(p), 'exec')",
+           libexec/"win11_usb_creator.py"
     assert_predicate bin/"epma-windows-usb-creator", :executable?
 
     # Confirm Tkinter is importable under the Python this formula depends on --
