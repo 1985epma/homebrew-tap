@@ -1,4 +1,4 @@
-# Homebrew formula for EPMA Windows 11 Creator USB
+# Homebrew formula for EPMA USB CREATOR
 #
 # Homebrew only installs formulae from a tap, so this file is published to
 # https://github.com/1985epma/homebrew-tap. Users install with:
@@ -12,24 +12,27 @@
 #   brew install --HEAD epma-windows-usb-creator
 #
 # MAINTAINER NOTES
-#   * After publishing a new release, refresh `url` and `sha256` by running:
-#       ./Formula/update-formula.sh v1.0.0
+#   * Publishing a release (tag v*) updates the tap AUTOMATICALLY: the "Homebrew tap"
+#     workflow runs ./Formula/update-formula.sh for the tag and opens a pull request
+#     on 1985epma/homebrew-tap (needs the repository secret TAP_GITHUB_TOKEN).
+#   * To do it by hand, refresh `url` and `sha256` by running:
+#       ./Formula/update-formula.sh v1.1.0
 #   * Validate before publishing:
 #       brew style 1985epma/tap
 #       brew audit --strict --online 1985epma/tap/epma-windows-usb-creator
 
 class EpmaWindowsUsbCreator < Formula
-  desc "Create a bootable Windows 11 USB drive from macOS or Linux"
+  desc "Create verified bootable USB drives from Windows 11, Linux and ChromeOS Flex"
   homepage "https://github.com/1985epma/epma-windows-usb-creator"
-  url "https://github.com/1985epma/epma-windows-usb-creator/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "d836915b03fb2a617e6f27a5c0e18f7b4c158a6a1139f14989f22436660b234a"
+  url "https://github.com/1985epma/epma-windows-usb-creator/archive/refs/tags/v1.1.0.tar.gz"
+  sha256 "644ae570a194e1915562b14b7760a9e2a6407e1c253647582c6e67cb93197583"
   license "GPL-3.0-or-later"
   head "https://github.com/1985epma/epma-windows-usb-creator.git", branch: "main"
 
   # Tkinter is required for the graphical interface. On macOS, Homebrew ships it
   # as a separate formula from Python itself.
-  depends_on "python-tk@3.13"
-  depends_on "python@3.13"
+  depends_on "python-tk@3.15"
+  depends_on "python@3.15"
 
   # Required to split install.wim/install.esd when it exceeds the FAT32 4 GB
   # single-file limit, which is the case for every current Windows 11 image.
@@ -43,9 +46,11 @@ class EpmaWindowsUsbCreator < Formula
     # under the Python that Homebrew installed Tkinter for.
     (bin/"epma-windows-usb-creator").write <<~SHELL
       #!/bin/bash
-      exec "#{formula_opt_bin("python@3.13")}/python3.13" "#{libexec}/win11_usb_creator.py" "$@"
+      exec "#{formula_opt_bin("python@3.15")}/python3.15" "#{libexec}/win11_usb_creator.py" "$@"
     SHELL
     chmod 0755, bin/"epma-windows-usb-creator"
+    # Short name that matches the application name shown in the macOS menu bar.
+    bin.install_symlink "epma-windows-usb-creator" => "epma-usb-creator"
   end
 
   def caveats
@@ -53,10 +58,18 @@ class EpmaWindowsUsbCreator < Formula
       Run the application with:
         epma-windows-usb-creator
 
-      This tool ERASES the selected disk completely. It only ever lists external
-      removable drives, requires you to type the disk identifier by hand, and
-      re-verifies the target immediately before writing -- but double-check the
-      selected disk before confirming.
+      This tool ERASES the selected disk completely. Safeguards built in:
+        * only USB drives are listed -- never your internal disk;
+        * a final confirmation dialog names the drive before anything is erased
+          (for high-risk disks you must also type the disk identifier);
+        * the target is re-verified immediately before writing;
+        * afterwards the drive is read back and compared with the image, and it
+          is ejected only if that verification passes.
+      Please still double-check the selected disk before confirming.
+
+      The administrator password is asked for once, up front, before the drive
+      is touched. It is used only to run local disk commands and is never logged,
+      written to disk or sent anywhere.
 
       Always download the Windows image from Microsoft's official website. The
       application accepts HTTPS links only and warns about unrecognised servers,
@@ -91,7 +104,7 @@ class EpmaWindowsUsbCreator < Formula
     #
     # `compile()` is used instead of `py_compile` because the latter writes a
     # __pycache__ directory next to the source, and the Cellar is read-only here.
-    system formula_opt_bin("python@3.13")/"python3.13", "-c",
+    system formula_opt_bin("python@3.15")/"python3.15", "-c",
            "import sys, pathlib; p = pathlib.Path(sys.argv[1]); " \
            "compile(p.read_text(encoding='utf-8'), str(p), 'exec')",
            libexec/"win11_usb_creator.py"
@@ -99,6 +112,6 @@ class EpmaWindowsUsbCreator < Formula
 
     # Confirm Tkinter is importable under the Python this formula depends on --
     # this is the single most common installation failure for the application.
-    system formula_opt_bin("python@3.13")/"python3.13", "-c", "import tkinter"
+    system formula_opt_bin("python@3.15")/"python3.15", "-c", "import tkinter"
   end
 end
